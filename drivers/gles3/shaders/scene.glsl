@@ -2344,7 +2344,7 @@ FRAGMENT_SHADER_CODE
 	{
 #if defined(DIFFUSE_TOON)
 		//simplify for toon, as
-		specular_light *= specular * metallic * albedo * 2.0;
+		specular_light *= (F = specular * metallic * albedo * 2.0);
 #else
 
 		// scales the specular reflections, needs to be be computed before lighting happens,
@@ -2356,7 +2356,7 @@ FRAGMENT_SHADER_CODE
 		vec4 r = roughness * c0 + c1;
 		float a004 = min(r.x * r.x, exp2(-9.28 * ndotv)) * r.x + r.y;
 		vec2 env = vec2(-1.04, 1.04) * a004 + r.zw;
-		specular_light *= env.x * F + env.y;
+		specular_light *= (F = env.x * F + env.y);
 #endif
 	}
 
@@ -2535,7 +2535,7 @@ FRAGMENT_SHADER_CODE
 
 #ifdef USE_VERTEX_LIGHTING //ubershader-runtime
 	diffuse_light *= mix(vec3(1.0), light_attenuation, diffuse_light_interp.a);
-	specular_light *= mix(vec3(1.0), light_attenuation, specular_light_interp.a);
+	specular_light -= specular_light_interp.rgb * F * specular_light_interp.a * (vec3(1.0) - light_attenuation);
 #else //ubershader-runtime
 	light_compute(normal, -light_direction_attenuation.xyz, eye_vec, binormal, tangent, light_color_energy.rgb, light_attenuation, albedo, transmission, light_params.z * specular_blob_intensity, roughness, metallic, specular, rim, rim_tint, clearcoat, clearcoat_gloss, anisotropy, diffuse_light, specular_light, alpha);
 #endif //ubershader-runtime
