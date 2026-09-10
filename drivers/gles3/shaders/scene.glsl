@@ -2192,6 +2192,7 @@ FRAGMENT_SHADER_CODE
 	//apply energy conservation
 
 	vec3 specular_light;
+	vec3 indirect_specular_light = vec3(0.0);
 	vec3 diffuse_light;
 #ifdef USE_VERTEX_LIGHTING //ubershader-runtime
 
@@ -2327,9 +2328,9 @@ FRAGMENT_SHADER_CODE
 	}
 
 	if (reflection_accum.a > 0.0) {
-		specular_light += reflection_accum.rgb / reflection_accum.a;
+		indirect_specular_light += reflection_accum.rgb / reflection_accum.a;
 	} else {
-		specular_light += env_reflection_light;
+		indirect_specular_light += env_reflection_light;
 	}
 #ifndef USE_LIGHTMAP //ubershader-runtime
 #ifndef USE_LIGHTMAP_CAPTURE //ubershader-runtime
@@ -2344,7 +2345,7 @@ FRAGMENT_SHADER_CODE
 	{
 #if defined(DIFFUSE_TOON)
 		//simplify for toon, as
-		specular_light *= specular * metallic * albedo * 2.0;
+		vec3 specular_scale = specular * metallic * albedo * 2.0;
 #else
 
 		// scales the specular reflections, needs to be be computed before lighting happens,
@@ -2356,8 +2357,10 @@ FRAGMENT_SHADER_CODE
 		vec4 r = roughness * c0 + c1;
 		float a004 = min(r.x * r.x, exp2(-9.28 * ndotv)) * r.x + r.y;
 		vec2 env = vec2(-1.04, 1.04) * a004 + r.zw;
-		specular_light *= env.x * F + env.y;
+		vec3 specular_scale = env.x * F + env.y;
 #endif
+		specular_light *= specular_scale;
+		indirect_specular_light *= specular_scale;
 	}
 
 #ifdef USE_LIGHT_DIRECTIONAL //ubershader-runtime
@@ -2541,6 +2544,8 @@ FRAGMENT_SHADER_CODE
 #endif //ubershader-runtime
 
 #endif //#USE_LIGHT_DIRECTIONAL //ubershader-runtime
+
+	specular_light += indirect_specular_light;
 
 #ifdef USE_VERTEX_LIGHTING //ubershader-runtime
 	diffuse_light *= albedo;
